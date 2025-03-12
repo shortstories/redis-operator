@@ -1,4 +1,4 @@
-FROM --platform=$BUILDPLATFORM golang:1.20-alpine AS build
+FROM --platform=$BUILDPLATFORM golang:1.24-alpine AS build
 RUN apk --no-cache add \
   bash
 
@@ -10,13 +10,17 @@ ARG TARGETARCH
 ARG VERSION
 RUN GOOS=$TARGETOS GOARCH=$TARGETARCH VERSION=$VERSION ./scripts/build.sh
 
-FROM alpine:latest
+#FROM alpine:latest
+FROM reg.navercorp.com/base/alpine:3.21
+LABEL maintainer="n3r.co <dl_n3r_co@navercorp.com>"
+LABEL com.navercorp.image.author="kr17709"
+
+USER root:root
+
 RUN apk --no-cache add \
   ca-certificates
-COPY --from=build /src/bin/redis-operator /usr/local/bin
-RUN addgroup -g 1000 rf && \
-  adduser -D -u 1000 -G rf rf && \
-  chown rf:rf /usr/local/bin/redis-operator
-USER rf
+COPY --from=build --chown=irteam:irteam --chmod=0755 /src/bin/redis-operator /usr/local/bin
+
+USER irteam:irteam
 
 ENTRYPOINT ["/usr/local/bin/redis-operator"]
